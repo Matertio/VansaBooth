@@ -161,6 +161,20 @@
         <canvas id="canvas" class="hidden"></canvas>
       </div>
 
+      <!-- PILIHAN TEMPLATE GITHUB & FIREBASE SYNC -->
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-pink-500/30 space-y-2">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-1.5">
+          <span>🖼️</span> Pilih Template Frame
+        </h3>
+        <select id="githubTemplateSelect" onchange="pilihDanSimpanTemplate(this.value)" class="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-pink-500">
+          <option value="">-- Pilih Frame dari Repository --</option>
+          <!-- UBAH SESUAI NAMA FILE DI FOLDER /templates GITHUB KAMU -->
+          <option value="templates/frame1.png">Template 1</option>
+          <option value="templates/frame2.png">Template 2</option>
+          <option value="templates/frame3.png">Template 3</option>
+        </select>
+      </div>
+
       <!-- GOOGLE DRIVE & QR CODE PANEL -->
       <div class="bg-white/5 p-3.5 rounded-2xl border border-cyan-500/30">
         <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-1 flex items-center gap-1.5">
@@ -211,25 +225,6 @@
         <button id="saveBoomerangBtn" onclick="saveBoomerangVideo()" disabled class="w-full bg-rose-600/80 hover:bg-rose-500/90 border border-rose-400/30 text-white font-bold text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-2 opacity-50 cursor-not-allowed">
           <span>💾</span> <span>Unduh Video Boomerang (.WebM)</span>
         </button>
-      </div>
-      
-      <!-- UPLOAD & GALERI TEMPLATE 4R -->
-      <div class="bg-white/5 p-3.5 rounded-2xl border border-pink-500/30">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-pink-400 mb-1 flex items-center gap-1.5">
-          <span>🖼️</span> Custom Frame PNG 4R
-        </h3>
-        
-        <label class="flex flex-col items-center justify-center w-full h-10 border-2 border-dashed border-white/20 hover:border-pink-500/80 rounded-xl cursor-pointer bg-black/30 hover:bg-black/50 transition mb-3">
-          <span class="text-xs font-semibold text-zinc-300" id="uploadFileName">☁️ Upload Template Baru</span>
-          <input type="file" id="templateInput" accept="image/png" class="hidden" onchange="handleTemplateUpload(event)" />
-        </label>
-
-        <div class="space-y-1.5">
-          <span class="text-[10px] text-zinc-400 font-medium block">Galeri Template Tersimpan:</span>
-          <div id="templateGallery" class="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto p-1 bg-black/40 rounded-xl border border-white/10">
-            <!-- Rendered dynamically -->
-          </div>
-        </div>
       </div>
 
       <!-- KALIBRASI KOORDINAT -->
@@ -321,7 +316,27 @@
 
   </aside>
 
+  <!-- FIREBASE SDK (COMPAT VERSION) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
   <script>
+    // 1. INISIALISASI FIREBASE
+    const firebaseConfig = {
+      apiKey: "AIzaSyDyEiR7r7fhf0fjY7X3D4Upvgp9wv8cXn0",
+      authDomain: "vansabooth.firebaseapp.com",
+      databaseURL: "https://vansabooth-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "vansabooth",
+      storageBucket: "vansabooth.firebasestorage.app",
+      messagingSenderId: "1039810370819",
+      appId: "1:1039810370819:web:7a7c32bad8d182e7645d36"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const calibRef = database.ref('calibration');
+    const activeTemplateRef = database.ref('activeTemplate');
+
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('canvas');
     const photoPreview = document.getElementById('photoPreview');
@@ -336,7 +351,6 @@
     const startBtnText = document.getElementById('startBtnText');
     const flashOverlay = document.getElementById('flashOverlay');
     const emptyFrameNotice = document.getElementById('emptyFrameNotice');
-    const templateGallery = document.getElementById('templateGallery');
 
     const toggleBoomerangBtn = document.getElementById('toggleBoomerangBtn');
     const boomerangBtnText = document.getElementById('boomerangBtnText');
@@ -347,8 +361,6 @@
     let currentLayout = 'double_duplicate';
     let rawCapturedCanvases = []; 
     let customTemplateImg = null;
-    let savedTemplates = []; 
-    let selectedTemplateId = null;
     let qrcodeObj = null;
 
     // BOOMERANG ANIMATION VARIABLES
@@ -461,27 +473,26 @@
       double_unique:    { poses: 6, label: 'Mulai 2-Strip Unik (6 Pose)' }
     };
 
-    function loadSavedCalibration() {
-      const saved = localStorage.getItem('snapbooth_4r_config');
-      if (saved) {
-        try {
-          calibConfig = JSON.parse(saved);
-          document.getElementById('cfgMarginX').value = calibConfig.marginX;
-          document.getElementById('cfgMarginY').value = calibConfig.marginY;
-          document.getElementById('cfgPhotoW').value = calibConfig.photoW;
-          document.getElementById('cfgPhotoH').value = calibConfig.photoH;
-          document.getElementById('cfgGapY').value = calibConfig.gapY;
-          document.getElementById('cfgStripGap').value = calibConfig.stripGap;
-        } catch (e) {
-          console.error("Gagal membaca memori kalibrasi.");
-        }
+    // SINKRONISASI KALIBRASI DENGAN FIREBASE
+    calibRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        calibConfig = data;
+        document.getElementById('cfgMarginX').value = calibConfig.marginX;
+        document.getElementById('cfgMarginY').value = calibConfig.marginY;
+        document.getElementById('cfgPhotoW').value = calibConfig.photoW;
+        document.getElementById('cfgPhotoH').value = calibConfig.photoH;
+        document.getElementById('cfgGapY').value = calibConfig.gapY;
+        document.getElementById('cfgStripGap').value = calibConfig.stripGap;
+        generateCompositeFrame();
       }
-    }
+    });
 
     function saveCalibration() {
       updateCalibrationConfig();
-      localStorage.setItem('snapbooth_4r_config', JSON.stringify(calibConfig));
-      alert('✅ Konfigurasi koordinat frame berhasil disimpan!');
+      calibRef.set(calibConfig).then(() => {
+        alert('✅ Konfigurasi kalibrasi tersimpan ke Firebase!');
+      });
     }
 
     function updateCalibrationConfig() {
@@ -508,100 +519,38 @@
       }
     }
 
-    function loadSavedTemplates() {
-      const stored = localStorage.getItem('snapbooth_templates');
-      if (stored) {
-        try {
-          savedTemplates = JSON.parse(stored);
-          if (savedTemplates.length > 0) {
-            selectTemplate(savedTemplates[0].id);
-          }
-        } catch (e) {
-          console.error("Gagal memuat memori template.");
-        }
-      }
-      renderTemplateGallery();
-    }
-
-    function handleTemplateUpload(event) {
-      const file = event.target.files[0];
-      if (!file || file.type !== 'image/png') return alert('Unggah file PNG transparan!');
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const dataUrl = e.target.result;
-        const newTemplate = {
-          id: 'tpl_' + Date.now(),
-          name: file.name,
-          data: dataUrl
-        };
-
-        savedTemplates.unshift(newTemplate);
-        try {
-          localStorage.setItem('snapbooth_templates', JSON.stringify(savedTemplates));
-        } catch (err) {
-          console.warn("Memori lokal penuh, template hanya disimpan di sesi berjalan.");
-        }
-
-        selectTemplate(newTemplate.id);
-        renderTemplateGallery();
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function selectTemplate(templateId) {
-      selectedTemplateId = templateId;
-      const tpl = savedTemplates.find(t => t.id === templateId);
-      if (tpl) {
-        const img = new Image();
-        img.onload = function() {
-          customTemplateImg = img;
-          document.getElementById('uploadFileName').innerText = `✅ ${tpl.name.substring(0, 14)}...`;
-          generateCompositeFrame();
-        };
-        img.src = tpl.data;
-      }
-      renderTemplateGallery();
-    }
-
-    function deleteTemplate(event, templateId) {
-      event.stopPropagation();
-      savedTemplates = savedTemplates.filter(t => t.id !== templateId);
-      localStorage.setItem('snapbooth_templates', JSON.stringify(savedTemplates));
-
-      if (selectedTemplateId === templateId) {
-        if (savedTemplates.length > 0) {
-          selectTemplate(savedTemplates[0].id);
-        } else {
-          selectedTemplateId = null;
-          customTemplateImg = null;
-          document.getElementById('uploadFileName').innerText = '☁️ Upload Template Baru';
-          generateCompositeFrame();
-        }
-      }
-      renderTemplateGallery();
-    }
-
-    function renderTemplateGallery() {
-      templateGallery.innerHTML = '';
-      if (savedTemplates.length === 0) {
-        templateGallery.innerHTML = `<span class="col-span-4 text-[10px] text-zinc-500 text-center py-2">Belum ada template tersimpan.</span>`;
+    // -------------------------------------------------------------
+    // FUNGSI PILIH & SINKRONISASI TEMPLATE DARI GITHUB KE FIREBASE
+    // -------------------------------------------------------------
+    function pilihDanSimpanTemplate(pathGambar) {
+      if (!pathGambar) {
+        customTemplateImg = null;
+        generateCompositeFrame();
         return;
       }
 
-      savedTemplates.forEach(tpl => {
-        const isSelected = tpl.id === selectedTemplateId;
-        const item = document.createElement('div');
-        item.className = `relative aspect-[2/3] rounded-lg border overflow-hidden cursor-pointer group transition ${isSelected ? 'border-pink-500 ring-2 ring-pink-500/30' : 'border-white/10 bg-black/40 hover:border-white/30'}`;
-        item.onclick = () => selectTemplate(tpl.id);
-
-        item.innerHTML = `
-          <img src="${tpl.data}" class="w-full h-full object-contain" />
-          <button onclick="deleteTemplate(event, '${tpl.id}')" class="absolute top-1 right-1 bg-black/70 text-zinc-300 hover:text-red-400 p-0.5 rounded text-[9px] opacity-0 group-hover:opacity-100 transition">✕</button>
-        `;
-        templateGallery.appendChild(item);
+      // Simpan path gambar ke Firebase agar device lain ikut berganti
+      activeTemplateRef.set({
+        path: pathGambar,
+        updatedAt: new Date().toISOString()
       });
     }
+
+    // MEMBACA PILIHAN TEMPLATE DARI FIREBASE SECARA REALTIME
+    activeTemplateRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (data && data.path) {
+        const selectElem = document.getElementById('githubTemplateSelect');
+        if (selectElem) selectElem.value = data.path;
+
+        const img = new Image();
+        img.onload = function() {
+          customTemplateImg = img;
+          generateCompositeFrame();
+        };
+        img.src = data.path;
+      }
+    });
 
     function setLayout(layoutType) {
       currentLayout = layoutType;
@@ -638,7 +587,6 @@
       getAudioContext();
       stopBoomerang();
 
-      // Tutup panel jika terbuka agar pemotretan tidak terganggu
       if (isPanelOpen) toggleControlPanel();
 
       const targetPoses = layoutConfig[currentLayout].poses;
@@ -675,7 +623,6 @@
       statusText.innerText = 'Sesi Foto Selesai!';
       actionArea.classList.remove('hidden');
 
-      // Aktifkan fitur boomerang & unduh
       toggleBoomerangBtn.disabled = false;
       toggleBoomerangBtn.className = "bg-rose-600/80 hover:bg-rose-500/90 text-white border border-rose-400/30 text-xs font-bold py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-rose-600/20";
 
@@ -685,7 +632,6 @@
       startBtn.disabled = false;
       startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
 
-      // Buka otomatis panel setelah selesai pemotretan untuk melihat hasil
       toggleControlPanel();
     }
 
@@ -994,60 +940,8 @@
       generateCompositeFrame();
     }
 
-    loadSavedCalibration();
-    loadSavedTemplates();
     initCamera();
     generateCompositeFrame();
-  </script>
-  <!-- Load SDK Firebase versi CDN -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<script>
-  // Konfigurasi milik kamu
-  const firebaseConfig = {
-    apiKey: "AIzaSyDyEiR7r7fhf0fjY7X3D4Upvgp9wv8cXn0",
-    authDomain: "vansabooth.firebaseapp.com",
-    databaseURL: "https://vansabooth-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "vansabooth",
-    storageBucket: "vansabooth.firebasestorage.app",
-    messagingSenderId: "1039810370819",
-    appId: "1:1039810370819:web:7a7c32bad8d182e7645d36"
-  };
-
-  // Inisialisasi Firebase & Database
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
-  const frameRef = database.ref('framePosition');
-
-  // 1. OTOMATIS MEMBACA POSISI DARI FIREBASE SAAT HALAMAN DIBUKA
-  frameRef.on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      console.log("Data posisi dimuat dari Firebase:", data);
-      
-      // SESUAIKAN DENGAN ID ELEMEN FRAME KAMU
-      const frameElement = document.getElementById('foto-frame'); // Ganti 'foto-frame' dengan ID framemu
-      if (frameElement) {
-        frameElement.style.left = data.posX + 'px';
-        frameElement.style.top = data.posY + 'px';
-      }
-    }
-  });
-
-  // 2. FUNGSI UNTUK MENYIMPAN POSISI KE FIREBASE
-  // Panggil fungsi ini saat posisi frame selesai diatur/diklik tombol simpan
-  function simpanPosisiFrame(x, y) {
-    frameRef.set({
-      posX: x,
-      posY: y,
-      updatedAt: new Date().toISOString()
-    }).then(() => {
-      alert("Posisi frame berhasil disimpan ke Cloud!");
-    }).catch((error) => {
-      console.error("Gagal menyimpan:", error);
-    });
-  }
   </script>
 </body>
 </html>
