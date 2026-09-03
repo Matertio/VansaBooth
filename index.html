@@ -7,7 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Library QR Code Generator -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -128,7 +128,7 @@
     </button>
   </div>
 
-  <!-- PANEL SLIDE-OUT KONTROL FITUR (TRANSPARENT & GLASSMORPHISM) -->
+  <!-- PANEL SLIDE-OUT KONTROL FITUR -->
   <aside id="controlPanel" class="fixed top-20 right-4 bottom-24 w-full max-w-md bg-black/60 backdrop-blur-2xl border border-white/15 rounded-3xl p-5 z-30 transform translate-x-[110%] transition-transform duration-300 ease-in-out shadow-2xl overflow-y-auto flex flex-col justify-between space-y-5">
     
     <div class="space-y-5">
@@ -161,18 +161,29 @@
         <canvas id="canvas" class="hidden"></canvas>
       </div>
 
-      <!-- PILIHAN TEMPLATE GITHUB & FIREBASE SYNC -->
-      <div class="bg-white/5 p-3.5 rounded-2xl border border-pink-500/30 space-y-2">
+      <!-- PILIHAN TEMPLATE GITHUB & UPLOAD LOKAL -->
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-pink-500/30 space-y-3">
         <h3 class="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-1.5">
-          <span>🖼️</span> Pilih Template Frame
+          <span>🖼️</span> Template Frame
         </h3>
-        <select id="githubTemplateSelect" onchange="pilihDanSimpanTemplate(this.value)" class="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-pink-500">
-          <option value="">-- Pilih Frame dari Repository --</option>
-          <!-- UBAH SESUAI NAMA FILE DI FOLDER /templates GITHUB KAMU -->
-          <option value="template/frame1.png">6109612587000467840.jpg</option>
-          <option value="template/frame2.png">Tak berjudul24_20260708003855.png</option>
-          <option value="template/frame3.png">Template 3</option>
-        </select>
+        
+        <!-- Dropdown Pilih Frame -->
+        <div>
+          <label class="text-[10px] text-zinc-400 block mb-1">Pilih Template Repository:</label>
+          <select id="githubTemplateSelect" onchange="pilihDanSimpanTemplate(this.value)" class="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-pink-500">
+            <option value="">-- Tanpa Frame (Polos) --</option>
+            <option value="templates/frame1.png">Template 1 (frame1.png)</option>
+            <option value="templates/frame2.png">Template 2 (frame2.png)</option>
+            <option value="templates/frame3.png">Template 3 (frame3.png)</option>
+          </select>
+        </div>
+
+        <!-- FITUR UPLOAD TEMPLATE BARU -->
+        <div class="border-t border-white/10 pt-2.5">
+          <label class="text-[10px] text-zinc-400 block mb-1">Upload Template Baru (.PNG):</label>
+          <input type="file" id="uploadTemplateInput" accept="image/png, image/jpeg" onchange="handleUploadTemplate(event)" class="block w-full text-xs text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-pink-600/80 file:text-white hover:file:bg-pink-500 cursor-pointer bg-black/30 rounded-xl border border-white/10">
+          <p class="text-[9px] text-zinc-400 mt-1">*Ukuran disarankan 1200x1800 px dengan area foto transparan.</p>
+        </div>
       </div>
 
       <!-- GOOGLE DRIVE & QR CODE PANEL -->
@@ -321,7 +332,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <script>
-    // 1. INISIALISASI FIREBASE
+    // INISIALISASI FIREBASE
     const firebaseConfig = {
       apiKey: "AIzaSyDyEiR7r7fhf0fjY7X3D4Upvgp9wv8cXn0",
       authDomain: "vansabooth.firebaseapp.com",
@@ -372,7 +383,6 @@
 
     let audioCtx = null;
 
-    // CONTROL PANEL TOGGLE LOGIC
     let isPanelOpen = false;
     function toggleControlPanel() {
       const panel = document.getElementById('controlPanel');
@@ -386,7 +396,7 @@
       } else {
         panel.classList.remove('translate-x-0');
         panel.classList.add('translate-x-[110%]');
-        btnText.innerText = 'Pengaturan & Fitur';
+        btnText.innerText = 'Atur Foto & Fitur';
       }
     }
 
@@ -519,36 +529,62 @@
       }
     }
 
-    // -------------------------------------------------------------
-    // FUNGSI PILIH & SINKRONISASI TEMPLATE DARI GITHUB KE FIREBASE
-    // -------------------------------------------------------------
-    function pilihDanSimpanTemplate(pathGambar) {
-      if (!pathGambar) {
+    // FUNGSI LOAD GAMBAR TEMPLATE
+    function loadTemplateSrc(src) {
+      if (!src) {
         customTemplateImg = null;
         generateCompositeFrame();
         return;
       }
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = function() {
+        customTemplateImg = img;
+        generateCompositeFrame();
+      };
+      img.onerror = function() {
+        console.error("Gagal memuat template dari path:", src);
+        customTemplateImg = null;
+        generateCompositeFrame();
+      };
+      img.src = src;
+    }
 
-      // Simpan path gambar ke Firebase agar device lain ikut berganti
+    function pilihDanSimpanTemplate(pathGambar) {
       activeTemplateRef.set({
         path: pathGambar,
         updatedAt: new Date().toISOString()
       });
+      loadTemplateSrc(pathGambar);
     }
 
-    // MEMBACA PILIHAN TEMPLATE DARI FIREBASE SECARA REALTIME
+    // FITUR UPLOAD TEMPLATE
+    function handleUploadTemplate(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Img = e.target.result;
+        // Simpan ke Firebase agar terdistribusi langsung
+        activeTemplateRef.set({
+          path: base64Img,
+          updatedAt: new Date().toISOString()
+        });
+        loadTemplateSrc(base64Img);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // MEMBACA TEMPLATE DARI FIREBASE SECARA REALTIME
     activeTemplateRef.on('value', (snapshot) => {
       const data = snapshot.val();
       if (data && data.path) {
         const selectElem = document.getElementById('githubTemplateSelect');
-        if (selectElem) selectElem.value = data.path;
-
-        const img = new Image();
-        img.onload = function() {
-          customTemplateImg = img;
-          generateCompositeFrame();
-        };
-        img.src = data.path;
+        if (selectElem && !data.path.startsWith('data:image')) {
+          selectElem.value = data.path;
+        }
+        loadTemplateSrc(data.path);
       }
     });
 
