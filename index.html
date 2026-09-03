@@ -161,7 +161,7 @@
         <canvas id="canvas" class="hidden"></canvas>
       </div>
 
-      <!-- KALIBRASI KOORDINAT (DIBAWAH PREVIEW FRAME) -->
+      <!-- KALIBRASI KOORDINAT -->
       <div class="bg-white/5 p-3.5 rounded-2xl border border-pink-500/30 space-y-2.5">
         <div class="flex items-center justify-between border-b border-white/10 pb-2">
           <div>
@@ -209,18 +209,16 @@
           <span>🖼️</span> Template Frame
         </h3>
         
-        <!-- Dropdown Pilih Frame -->
         <div>
           <label class="text-[10px] text-zinc-400 block mb-1">Pilih Template Repository:</label>
           <select id="githubTemplateSelect" onchange="pilihDanSimpanTemplate(this.value)" class="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-pink-500">
             <option value="">-- Tanpa Frame (Polos) --</option>
-            <option value="templates/Frame 1.png">Tiket Bioskop</option>
-            <option value="templates/Frame 1.png">Good Friend</option>
+            <option value="templates/frame1.png">Template 1 (frame1.png)</option>
+            <option value="templates/frame2.png">Template 2 (frame2.png)</option>
             <option value="templates/frame3.png">Template 3 (frame3.png)</option>
           </select>
         </div>
 
-        <!-- FITUR UPLOAD TEMPLATE BARU -->
         <div class="border-t border-white/10 pt-2.5">
           <label class="text-[10px] text-zinc-400 block mb-1">Upload Template Baru (.PNG):</label>
           <input type="file" id="uploadTemplateInput" accept="image/png, image/jpeg" onchange="handleUploadTemplate(event)" class="block w-full text-xs text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-pink-600/80 file:text-white hover:file:bg-pink-500 cursor-pointer bg-black/30 rounded-xl border border-white/10">
@@ -233,24 +231,17 @@
         <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-1 flex items-center gap-1.5">
           <span>🔗</span> Akses Foto Pelanggan (Google Drive)
         </h3>
-        <p class="text-[10px] text-zinc-400 mb-2.5">Masukkan link folder Drive publik atau biarkan kosong untuk unggah otomatis ImgBB.</p>
+        <p class="text-[10px] text-zinc-400 mb-2.5">Foto akan otomatis terunggah ke Google Drive dan menghasilkan QR Code file unik.</p>
         
         <div class="space-y-2">
-          <input type="text" id="gdriveUrl" placeholder="https://drive.google.com/drive/folders/..." class="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500" onchange="generateQrCode()">
-          
-          <div class="flex items-center justify-between gap-2">
-            <button onclick="generateQrCode()" class="flex-1 bg-cyan-600/80 hover:bg-cyan-500/90 text-white text-xs font-bold py-2 rounded-xl transition border border-cyan-400/30">
-              ⚡ Buat QR Code
-            </button>
-            <label class="flex items-center gap-1.5 text-[10px] text-zinc-300 cursor-pointer bg-black/30 px-2.5 py-2 rounded-xl border border-white/5">
-              <input type="checkbox" id="chkEmbedQr" onchange="generateCompositeFrame()" class="accent-cyan-500 rounded">
-              <span>Tempel di Frame</span>
-            </label>
-          </div>
+          <label class="flex items-center gap-1.5 text-[10px] text-zinc-300 cursor-pointer bg-black/30 px-2.5 py-2 rounded-xl border border-white/5">
+            <input type="checkbox" id="chkEmbedQr" onchange="generateCompositeFrame()" class="accent-cyan-500 rounded">
+            <span>Tempel QR Code di Frame Foto</span>
+          </label>
 
           <div id="qrPreviewWrapper" class="hidden flex flex-col items-center justify-center p-3 bg-black/50 rounded-xl border border-white/10 mt-2">
             <div id="qrcode" class="p-2 bg-white rounded-lg"></div>
-            <span class="text-[9px] text-zinc-400 mt-2">Scan untuk mengunduh foto</span>
+            <span class="text-[9px] text-zinc-400 mt-2">Scan untuk mengunduh foto dari Google Drive</span>
           </div>
         </div>
       </div>
@@ -336,9 +327,9 @@
 
   <script>
     // ==========================================
-    // 1. KONFIGURASI IMGBB (GANTI API KEY KAMU)
+    // 1. LINK GOOGLE APPS SCRIPT WEB APP
     // ==========================================
-    const IMGBB_API_KEY = "MASUKKAN_API_KEY_IMGBB_KAMU_DI_SINI"; 
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-HIpLYQtnqrACkmuZptkkOhTojBoxb2umyIB3a3sMBPzotLjwi6ccMoI1_MlJdOop/exec"; 
 
     // ==========================================
     // 2. INISIALISASI FIREBASE
@@ -383,7 +374,6 @@
     let rawCapturedCanvases = []; 
     let customTemplateImg = null;
     let currentTemplatePath = "default";
-    let qrcodeObj = null;
 
     // BOOMERANG ANIMATION VARIABLES
     let isBoomerangActive = false;
@@ -562,32 +552,26 @@
     }
 
     // ==========================================
-    // 3. FUNGSI UPLOAD IMGBB & GENERATE QR CODE
+    // 3. FUNGSI UNGGAH GOOGLE DRIVE VIA GAS & QR
     // ==========================================
     async function uploadAndGenerateQr() {
-      if (!IMGBB_API_KEY || IMGBB_API_KEY === "91d115dd70d99e76934c1b4c2e749297") {
-        console.warn("API Key ImgBB belum diisi!");
-        return;
-      }
-
-      statusText.innerText = 'Mengunggah foto ke Cloud (ImgBB)...';
+      statusText.innerText = 'Mengunggah foto ke Google Drive...';
 
       const dataUrl = canvas.toDataURL('image/png');
-      const base64Data = dataUrl.split(',')[1]; 
-
-      const formData = new FormData();
-      formData.append('image', base64Data);
 
       try {
-        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
-          body: formData
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: JSON.stringify({ image: dataUrl })
         });
 
         const result = await response.json();
 
-        if (result.success) {
-          const downloadURL = result.data.url;
+        if (result.status === 'success') {
+          const fileUrl = result.url; 
 
           const qrContainer = document.getElementById('qrcode');
           const qrWrapper = document.getElementById('qrPreviewWrapper');
@@ -595,7 +579,7 @@
           if (qrContainer) {
             qrContainer.innerHTML = '';
             new QRCode(qrContainer, {
-              text: downloadURL,
+              text: fileUrl,
               width: 120,
               height: 120,
               colorDark : "#000000",
@@ -605,15 +589,17 @@
           }
 
           if (qrWrapper) qrWrapper.classList.remove('hidden');
-          statusText.innerText = 'Foto Berhasil Diunggah! Scan QR Code untuk unduh.';
+          statusText.innerText = 'Foto terunggah ke Google Drive! Scan QR Code untuk mengunduh.';
+
+          generateCompositeFrame();
 
           if (!isPanelOpen) toggleControlPanel();
         } else {
-          throw new Error('Gagal unggah ke ImgBB');
+          throw new Error(result.message);
         }
       } catch (error) {
-        console.error("Gagal mengunggah:", error);
-        statusText.innerText = 'Gagal mengunggah foto ke Cloud.';
+        console.error("Gagal mengunggah ke Google Drive:", error);
+        statusText.innerText = 'Gagal mengunggah foto ke Google Drive.';
       }
     }
 
@@ -756,7 +742,7 @@
       startBtn.disabled = false;
       startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
 
-      // --- OTOMATIS UNGGAH DAN GENERATE QR CODE ---
+      // OTOMATIS UNGGAH KE GOOGLE DRIVE & GENERATE QR CODE
       await uploadAndGenerateQr();
     }
 
@@ -771,27 +757,6 @@
       tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
 
       rawCapturedCanvases.push(tempCanvas);
-    }
-
-    function generateQrCode() {
-      const url = document.getElementById('gdriveUrl').value.trim();
-      const qrWrapper = document.getElementById('qrPreviewWrapper');
-      const qrContainer = document.getElementById('qrcode');
-
-      if (!url) return alert('Masukkan URL folder Google Drive terlebih dahulu!');
-
-      qrContainer.innerHTML = '';
-      qrcodeObj = new QRCode(qrContainer, {
-        text: url,
-        width: 100,
-        height: 100,
-        colorDark : "#000000",
-        colorLight : "#ffffff",
-        correctLevel : QRCode.CorrectLevel.H
-      });
-
-      qrWrapper.classList.remove('hidden');
-      generateCompositeFrame();
     }
 
     function setupBoomerangSequence() {
