@@ -999,5 +999,55 @@
     initCamera();
     generateCompositeFrame();
   </script>
+  <!-- Load SDK Firebase versi CDN -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+  // Konfigurasi milik kamu
+  const firebaseConfig = {
+    apiKey: "AIzaSyDyEiR7r7fhf0fjY7X3D4Upvgp9wv8cXn0",
+    authDomain: "vansabooth.firebaseapp.com",
+    databaseURL: "https://vansabooth-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "vansabooth",
+    storageBucket: "vansabooth.firebasestorage.app",
+    messagingSenderId: "1039810370819",
+    appId: "1:1039810370819:web:7a7c32bad8d182e7645d36"
+  };
+
+  // Inisialisasi Firebase & Database
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+  const frameRef = database.ref('framePosition');
+
+  // 1. OTOMATIS MEMBACA POSISI DARI FIREBASE SAAT HALAMAN DIBUKA
+  frameRef.on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      console.log("Data posisi dimuat dari Firebase:", data);
+      
+      // SESUAIKAN DENGAN ID ELEMEN FRAME KAMU
+      const frameElement = document.getElementById('foto-frame'); // Ganti 'foto-frame' dengan ID framemu
+      if (frameElement) {
+        frameElement.style.left = data.posX + 'px';
+        frameElement.style.top = data.posY + 'px';
+      }
+    }
+  });
+
+  // 2. FUNGSI UNTUK MENYIMPAN POSISI KE FIREBASE
+  // Panggil fungsi ini saat posisi frame selesai diatur/diklik tombol simpan
+  function simpanPosisiFrame(x, y) {
+    frameRef.set({
+      posX: x,
+      posY: y,
+      updatedAt: new Date().toISOString()
+    }).then(() => {
+      alert("Posisi frame berhasil disimpan ke Cloud!");
+    }).catch((error) => {
+      console.error("Gagal menyimpan:", error);
+    });
+  }
+  </script>
 </body>
 </html>
