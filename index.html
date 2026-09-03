@@ -161,9 +161,51 @@
         <canvas id="canvas" class="hidden"></canvas>
       </div>
 
+      <!-- KALIBRASI KOORDINAT (DIBAWAH PREVIEW FRAME) -->
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-pink-500/30 space-y-2.5">
+        <div class="flex items-center justify-between border-b border-white/10 pb-2">
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-1.5">
+              <span>🎯</span> Kalibrasi Posisi Kotak Frame
+            </h3>
+            <p class="text-[9px] text-zinc-400" id="currentTemplateLabel">Tersimpan untuk: Polos / Standard</p>
+          </div>
+          <button onclick="saveCalibration()" class="bg-pink-600/80 hover:bg-pink-500/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition border border-pink-400/30">
+            💾 Simpan Kalibrasi
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5 text-xs">
+          <div>
+            <label class="text-[10px] text-zinc-400 block mb-1">Margin X (px)</label>
+            <input type="number" id="cfgMarginX" value="40" onchange="updateCalibrationConfig()" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-pink-500">
+          </div>
+          <div>
+            <label class="text-[10px] text-zinc-400 block mb-1">Margin Y (px)</label>
+            <input type="number" id="cfgMarginY" value="60" onchange="updateCalibrationConfig()" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-pink-500">
+          </div>
+          <div>
+            <label class="text-[10px] text-zinc-400 block mb-1">Lebar Foto (px)</label>
+            <input type="number" id="cfgPhotoW" value="510" onchange="updateCalibrationConfig()" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-pink-500">
+          </div>
+          <div>
+            <label class="text-[10px] text-zinc-400 block mb-1">Tinggi Foto (px)</label>
+            <input type="number" id="cfgPhotoH" value="480" onchange="updateCalibrationConfig()" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-pink-500">
+          </div>
+          <div>
+            <label class="text-[10px] text-zinc-400 block mb-1">Jarak Foto Y (px)</label>
+            <input type="number" id="cfgGapY" value="35" onchange="updateCalibrationConfig()" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-pink-500">
+          </div>
+          <div>
+            <label class="text-[10px] text-zinc-400 block mb-1">Jarak 2 Strip (px)</label>
+            <input type="number" id="cfgStripGap" value="100" onchange="updateCalibrationConfig()" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-pink-500">
+          </div>
+        </div>
+      </div>
+
       <!-- PILIHAN TEMPLATE GITHUB & UPLOAD LOKAL -->
-      <div class="bg-white/5 p-3.5 rounded-2xl border border-pink-500/30 space-y-3">
-        <h3 class="text-xs font-bold uppercase tracking-wider text-pink-400 flex items-center gap-1.5">
+      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-3">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
           <span>🖼️</span> Template Frame
         </h3>
         
@@ -172,8 +214,8 @@
           <label class="text-[10px] text-zinc-400 block mb-1">Pilih Template Repository:</label>
           <select id="githubTemplateSelect" onchange="pilihDanSimpanTemplate(this.value)" class="w-full bg-black/50 border border-white/20 rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-pink-500">
             <option value="">-- Tanpa Frame (Polos) --</option>
-            <option value="templates/Frame 1.png">Tiket Bioskop</option>
-            <option value="templates/Frame 2.png">Good Friend</option>
+            <option value="templates/frame1.png">Template 1 (frame1.png)</option>
+            <option value="templates/frame2.png">Template 2 (frame2.png)</option>
             <option value="templates/frame3.png">Template 3 (frame3.png)</option>
           </select>
         </div>
@@ -236,45 +278,6 @@
         <button id="saveBoomerangBtn" onclick="saveBoomerangVideo()" disabled class="w-full bg-rose-600/80 hover:bg-rose-500/90 border border-rose-400/30 text-white font-bold text-xs py-2.5 px-3 rounded-xl transition flex items-center justify-center gap-2 opacity-50 cursor-not-allowed">
           <span>💾</span> <span>Unduh Video Boomerang (.WebM)</span>
         </button>
-      </div>
-
-      <!-- KALIBRASI KOORDINAT -->
-      <div class="bg-white/5 p-3.5 rounded-2xl border border-white/10 space-y-2.5">
-        <div class="flex items-center justify-between border-b border-white/10 pb-2">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
-            <span>🎯</span> Kalibrasi Posisi Kotak Frame
-          </h3>
-          <button onclick="saveCalibration()" class="bg-pink-600/80 hover:bg-pink-500/90 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition border border-pink-400/30">
-            💾 Simpan
-          </button>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2.5 text-xs">
-          <div>
-            <label class="text-[10px] text-zinc-400 block mb-1">Margin X (px)</label>
-            <input type="number" id="cfgMarginX" value="40" onchange="updateCalibrationConfig()" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-pink-500">
-          </div>
-          <div>
-            <label class="text-[10px] text-zinc-400 block mb-1">Margin Y (px)</label>
-            <input type="number" id="cfgMarginY" value="60" onchange="updateCalibrationConfig()" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-pink-500">
-          </div>
-          <div>
-            <label class="text-[10px] text-zinc-400 block mb-1">Lebar Foto (px)</label>
-            <input type="number" id="cfgPhotoW" value="510" onchange="updateCalibrationConfig()" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-pink-500">
-          </div>
-          <div>
-            <label class="text-[10px] text-zinc-400 block mb-1">Tinggi Foto (px)</label>
-            <input type="number" id="cfgPhotoH" value="480" onchange="updateCalibrationConfig()" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-pink-500">
-          </div>
-          <div>
-            <label class="text-[10px] text-zinc-400 block mb-1">Jarak Foto Y (px)</label>
-            <input type="number" id="cfgGapY" value="35" onchange="updateCalibrationConfig()" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-pink-500">
-          </div>
-          <div>
-            <label class="text-[10px] text-zinc-400 block mb-1">Jarak 2 Strip (px)</label>
-            <input type="number" id="cfgStripGap" value="100" onchange="updateCalibrationConfig()" class="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1 text-zinc-200 focus:outline-none focus:border-pink-500">
-          </div>
-        </div>
       </div>
 
       <!-- MODE LAYOUT 2-STRIP -->
@@ -345,7 +348,7 @@
 
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-    const calibRef = database.ref('calibration');
+    const calibRootRef = database.ref('templateCalibrations');
     const activeTemplateRef = database.ref('activeTemplate');
 
     const video = document.getElementById('webcam');
@@ -372,6 +375,7 @@
     let currentLayout = 'double_duplicate';
     let rawCapturedCanvases = []; 
     let customTemplateImg = null;
+    let currentTemplatePath = "default";
     let qrcodeObj = null;
 
     // BOOMERANG ANIMATION VARIABLES
@@ -469,7 +473,7 @@
       flashOverlay.classList.add('flash-active');
     }
 
-    let calibConfig = {
+    const defaultCalibConfig = {
       marginX: 40,
       marginY: 60,
       photoW: 510,
@@ -478,30 +482,53 @@
       stripGap: 100
     };
 
+    let calibConfig = { ...defaultCalibConfig };
+
     const layoutConfig = {
       double_duplicate: { poses: 3, label: 'Mulai 2-Strip Kembar (3 Pose)' },
       double_unique:    { poses: 6, label: 'Mulai 2-Strip Unik (6 Pose)' }
     };
 
-    // SINKRONISASI KALIBRASI DENGAN FIREBASE
-    calibRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        calibConfig = data;
+    // FUNGSI CONVERT PATH TEMPLATE DADI KEY FIREBASE YANG AMAN
+    function sanitizeKey(path) {
+      if (!path) return "default";
+      return path.replace(/[.#$/\[\]]/g, "_").slice(-50);
+    }
+
+    // LOAD KALIBRASI TERTENTU DARI FIREBASE UNTUK TEMPLATE AKTIF
+    function loadTemplateCalibration(templatePath) {
+      const key = sanitizeKey(templatePath);
+      
+      const labelElem = document.getElementById('currentTemplateLabel');
+      if (labelElem) {
+        labelElem.innerText = `Tersimpan untuk: ${templatePath ? templatePath.split('/').pop() : 'Polos / Standard'}`;
+      }
+
+      calibRootRef.child(key).once('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          calibConfig = data;
+        } else {
+          calibConfig = { ...defaultCalibConfig };
+        }
+        
         document.getElementById('cfgMarginX').value = calibConfig.marginX;
         document.getElementById('cfgMarginY').value = calibConfig.marginY;
         document.getElementById('cfgPhotoW').value = calibConfig.photoW;
         document.getElementById('cfgPhotoH').value = calibConfig.photoH;
         document.getElementById('cfgGapY').value = calibConfig.gapY;
         document.getElementById('cfgStripGap').value = calibConfig.stripGap;
+        
         generateCompositeFrame();
-      }
-    });
+      });
+    }
 
     function saveCalibration() {
       updateCalibrationConfig();
-      calibRef.set(calibConfig).then(() => {
-        alert('✅ Konfigurasi kalibrasi tersimpan ke Firebase!');
+      const key = sanitizeKey(currentTemplatePath);
+      
+      calibRootRef.child(key).set(calibConfig).then(() => {
+        alert('✅ Kalibrasi khusus untuk template ini berhasil tersimpan!');
       });
     }
 
@@ -531,11 +558,15 @@
 
     // FUNGSI LOAD GAMBAR TEMPLATE
     function loadTemplateSrc(src) {
+      currentTemplatePath = src;
+      loadTemplateCalibration(src);
+
       if (!src) {
         customTemplateImg = null;
         generateCompositeFrame();
         return;
       }
+
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = function() {
@@ -566,7 +597,6 @@
       const reader = new FileReader();
       reader.onload = function(e) {
         const base64Img = e.target.result;
-        // Simpan ke Firebase agar terdistribusi langsung
         activeTemplateRef.set({
           path: base64Img,
           updatedAt: new Date().toISOString()
